@@ -1,0 +1,14 @@
+[package]
+name = "rtic-hifive1-examples"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rtic = { git = "https://github.com/greenlsi/rtic.git", branch = "master", features = ["riscv-e310x-backend"] }
+hifive1 = { git = "https://github.com/romancardenas/hifive1.git", features = ["board-redv"] }
+panic-halt = "0.2.0"
+e310x = { git = "https://github.com/greenlsi/e310x.git", branch = "master", features = ["rt"]}
+riscv-slic = {git = "https://github.com/romancardenas/riscv-slic", branch = "dev-plic"}
+riscv-rt = {git = "https://github.com/rust-embedded/riscv-rt.git"}
