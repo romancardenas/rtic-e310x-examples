@@ -13,8 +13,8 @@ unsafe fn ClearUART0() {
 
 #[rtic::app(device = e310x)]
 mod app {
-    use slic::Interrupt;
     use hifive1::sprintln;
+    use slic::Interrupt;
 
     #[shared]
     struct Shared {}
@@ -42,11 +42,11 @@ mod app {
         rtic::pend(Interrupt::UART0);
 
         loop {
-            unsafe{rtic::nop()};
+            unsafe { rtic::nop() };
         }
     }
 
-    #[task(binds = UART0, local = [times: u32 = 0])]
+    #[task(binds = UART0, local = [times: u32 = 0], priority = 1)]
     fn uart0(cx: uart0::Context) {
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
