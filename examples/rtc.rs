@@ -4,17 +4,24 @@
 use panic_halt as _;
 use riscv_rt as _;
 
-#[no_mangle]
-#[allow(non_snake_case)]
-unsafe fn ClearUART0() {
-    // In RISCV-SLIC, we need to define a specific handler
-    // for clearing HW interrupts
-}
-
-#[rtic::app(device = e310x)]
+#[rtic::app(device = e310x, dispatchers = [SoftLow])]
 mod app {
     use hifive1::sprintln;
     use slic::Interrupt;
+
+    /// HW handler for clearing RTC. When using SLIC, we must
+    /// define a ClearX handler for every bypassed HW interrupt
+    #[no_mangle]
+    #[allow(non_snake_case)]
+    unsafe fn ClearRTC() {
+        // increase rtccmp to clear HW interrupt
+        let rtc = hifive1::hal::DeviceResources::steal().peripherals.RTC;
+        let rtccmp = rtc.rtccmp.read().bits();
+        sprintln!("clear RTC (rtccmp = {})", rtccmp);
+        rtc.rtccmp.write(|w| w.bits(rtccmp + 65536));
+        // we also pend the lowest priority SW task before the RTC SW task is automatically pended
+        riscv_slic::pend(Interrupt::SoftLow);
+    }
 
     #[shared]
     struct Shared {}
@@ -24,35 +31,43 @@ mod app {
 
     #[init]
     fn init(_: init::Context) -> (Shared, Local) {
-        // Pends the UART0 interrupt but its handler won't run until *after*
+        // Pends the SoftLow interrupt but its handler won't run until *after*
         // `init` returns because interrupts are disabled
-        rtic::pend(Interrupt::UART0); // equivalent to NVIC::pend
-
+        rtic::pend(Interrupt::SoftLow);
         sprintln!("init");
-
         (Shared {}, Local {})
     }
 
     #[idle]
     fn idle(_: idle::Context) -> ! {
-        // interrupts are enabled again; the `UART0` handler runs at this point
-
+        // interrupts are enabled again; the `SoftLow` handler runs at this point
         sprintln!("idle");
-
-        rtic::pend(Interrupt::UART0);
-
         loop {
             unsafe { rtic::nop() };
         }
     }
 
-    #[task(binds = UART0, local = [times: u32 = 0], priority = 1)]
-    fn uart0(cx: uart0::Context) {
+    /// HW task executed after receiving an RTC external interrupt
+    #[task(binds = RTC, local = [times: u32 = 0], priority = 2)]
+    fn hw_rtc(cx: hw_rtc::Context) {
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
 
         sprintln!(
-            "UART0 called {} time{}",
+            "hw_rtc called {} time{}",
+            *cx.local.times,
+            if *cx.local.times > 1 { "s" } else { "" }
+        );
+    }
+
+    /// SW task triggerend during the process of clearing RTC EXTIs
+    #[task(local = [times: u32 = 0], priority = 1)]
+    async fn soft_low(cx: soft_low::Context) {
+        // Safe access to local `static mut` variable
+        *cx.local.times += 1;
+
+        sprintln!(
+            "soft_low called {} time{}",
             *cx.local.times,
             if *cx.local.times > 1 { "s" } else { "" }
         );
