@@ -23,6 +23,7 @@ mod app {
         rtc.rtccmp.write(|w| w.bits(rtccmp + 65536));
         // we also pend the lowest priority SW task before the RTC SW task is automatically pended
         //riscv_slic::pend(slic::Interrupt::SoftLow);
+        //soft_low::spawn().unwrap();
     }
 
     #[shared]
@@ -62,7 +63,8 @@ mod app {
         rtc.set_rtc(0);
         rtc.set_rtccmp(10000);
         rtc.enable();
-        //soft_low::spawn().unwrap();
+        // TODO: crashes on try_allocate()
+        //let res = soft_low::spawn().unwrap();
         sprintln!("init");
         (Shared {}, Local {})
     }
