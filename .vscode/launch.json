@@ -17,9 +17,9 @@
             //"showDevDebugOutput": "raw",
             "cwd": "${workspaceRoot}",
             // Executable to launch
-            "executable": "${workspaceRoot}/../target/riscv32imac-unknown-none-elf/debug/examples/rtc",
+            "executable": "${workspaceRoot}/target/riscv32imac-unknown-none-elf/debug/examples/rtc",
             "interface": "jtag",
-            "svdFile": "${workspaceRoot}/hifive.svd",
+            // "svdFile": "${workspaceRoot}/hifive.svd",
             // Set this to point to sifive risc-v gdb path 
             "gdbPath": "${workspaceRoot}/../../toolchains/sifive/bin/riscv64-unknown-elf-gdb",
             "toolchainPrefix": "riscv64-unknown-elf",
