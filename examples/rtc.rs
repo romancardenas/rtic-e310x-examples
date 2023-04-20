@@ -6,10 +6,8 @@ use panic_halt as _;
 use riscv_rt as _;
 
 #[rtic::app(device = e310x, dispatchers = [SoftLow])]
-
 mod app {
-    use hifive1::hal::prelude::*;
-    use hifive1::sprintln;
+    use hifive1::{hal::prelude::*, sprintln};
 
     /// HW handler for clearing RTC. When using SLIC, we must
     /// define a ClearX handler for every bypassed HW interrupt
@@ -63,8 +61,8 @@ mod app {
         rtc.set_rtc(0);
         rtc.set_rtccmp(10000);
         rtc.enable();
-        // TODO: crashes on try_allocate()
-        //let res = soft_low::spawn().unwrap();
+        soft_low::spawn().unwrap(); // TODO: crashes on try_allocate()
+
         sprintln!("init");
         (Shared {}, Local {})
     }
@@ -74,7 +72,7 @@ mod app {
         // interrupts are enabled again; the `SoftLow` handler runs at this point
         sprintln!("idle");
         loop {
-            unsafe { rtic::nop() };
+            continue;
         }
     }
 
