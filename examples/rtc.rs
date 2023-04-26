@@ -21,7 +21,7 @@ mod app {
         rtc.rtccmp.write(|w| w.bits(rtccmp + 65536));
         // we also pend the lowest priority SW task before the RTC SW task is automatically pended
         //riscv_slic::pend(slic::Interrupt::SoftLow);
-        //soft_low::spawn().unwrap();
+        // soft_low::spawn().unwrap();
     }
 
     #[shared]
@@ -53,7 +53,7 @@ mod app {
             115_200.bps(),
             clocks,
         );
-        sprintln!("init");
+        // sprintln!("init");
 
         let mut rtc = p.RTC.constrain();
         rtc.disable();
@@ -81,6 +81,8 @@ mod app {
     fn hw_rtc(cx: hw_rtc::Context) {
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
+        sprintln!("Spawning softlow...");
+        soft_low::spawn();
 
         sprintln!(
             "hw_rtc called {} time{}",
@@ -92,6 +94,7 @@ mod app {
     /// SW task triggerend during the process of clearing RTC EXTIs
     #[task(local = [times: u32 = 0], priority = 1)]
     async fn soft_low(cx: soft_low::Context) {
+        sprintln!("Reached softlow");
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
 
