@@ -5,9 +5,9 @@
 use panic_halt as _;
 use riscv_rt as _;
 
-#[rtic::app(device = e310x, dispatchers = [SoftLow])]
+#[rtic::app(device = e310x, dispatchers = [SoftLow, SoftHigh])]
 mod app {
-    use hifive1::{hal::prelude::*, sprintln};
+    use hifive1::{hal::prelude::*, sprintln, sprint};
 
     /// HW handler for clearing RTC. When using SLIC, we must
     /// define a ClearX handler for every bypassed HW interrupt
@@ -25,7 +25,9 @@ mod app {
     }
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        counter: u32,
+    }
 
     #[local]
     struct Local {}
@@ -64,7 +66,7 @@ mod app {
         soft_low::spawn().unwrap(); // TODO: crashes on try_allocate()
 
         sprintln!("init");
-        (Shared {}, Local {})
+        (Shared { counter: 0 }, Local {})
     }
 
     #[idle]
@@ -77,12 +79,17 @@ mod app {
     }
 
     /// HW task executed after receiving an RTC external interrupt
-    #[task(binds = RTC, local = [times: u32 = 0], priority = 2)]
-    fn hw_rtc(cx: hw_rtc::Context) {
+    #[task(binds = RTC, local = [times: u32 = 0], shared = [counter], priority = 2)]
+    fn hw_rtc(mut cx: hw_rtc::Context) {
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
         sprintln!("Spawning softlow...");
         soft_low::spawn();
+        cx.shared.counter.lock(|counter| {
+            *counter += 1;
+            sprintln!("[RTC]: Shared counter is now: {}", *counter);
+        });
+
 
         sprintln!(
             "hw_rtc called {} time{}",
@@ -92,12 +99,29 @@ mod app {
     }
 
     /// SW task triggerend during the process of clearing RTC EXTIs
-    #[task(local = [times: u32 = 0], priority = 1)]
+    #[task(local = [times: u32 = 0], shared = [counter], priority = 1)]
     async fn soft_low(cx: soft_low::Context) {
         sprintln!("Reached softlow");
         // Safe access to local `static mut` variable
         *cx.local.times += 1;
 
+        sprintln!(
+            "soft_low called {} time{}",
+            *cx.local.times,
+            if *cx.local.times > 1 { "s" } else { "" }
+        );
+    }
+    #[task(local = [times: u32 = 0], shared = [counter], priority = 3)]
+    async fn soft_high(mut cx: soft_high::Context) {
+        sprintln!("Reached softlow");
+        // Safe access to local `static mut` variable
+        *cx.local.times += 1;
+        
+        cx.shared.counter.lock(|counter| {
+            *counter += 1;
+            sprintln!("[SoftHigh]: Shared counter is now: {}", *counter);
+
+        });
         sprintln!(
             "soft_low called {} time{}",
             *cx.local.times,
