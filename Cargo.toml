@@ -12,3 +12,4 @@ hifive1 = { git = "https://github.com/romancardenas/hifive1.git", features = ["b
 panic-halt = "0.2.0"
 e310x = { git = "https://github.com/greenlsi/e310x.git", branch = "master", features = ["rt"]}
 riscv-rt = {git = "https://github.com/rust-embedded/riscv-rt.git"}
+riscv = "0.10.1"
